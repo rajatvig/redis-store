@@ -29,8 +29,12 @@ module Rack
           cache.get(hexdigest(key)) || []
         end
 
-        def write(key, entries)
-          cache.set(hexdigest(key), entries)
+        def write(key, entries, ttl=nil)
+          if ttl.to_i.zero?
+            cache.set(hexdigest(key), entries)
+          else
+            cache.setex(hexdigest(key), ttl, entries)
+          end
         end
 
         def purge(key)
