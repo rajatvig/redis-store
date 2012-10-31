@@ -33,7 +33,8 @@ module Rack
           if ttl.to_i.zero?
             cache.set(hexdigest(key), entries)
           else
-            cache.setex(hexdigest(key), ttl, entries)
+            cache.set(hexdigest(key), entries)
+            cache.expire(hexdigest(key), ttl)
           end
         end
 

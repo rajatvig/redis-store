@@ -39,7 +39,9 @@ module Rack
           if ttl.zero?
             [key, size] if cache.set(key, buf.string)
           else
-            [key, size] if cache.setex(key, ttl, buf.string)
+            cache.set(key, buf.string)
+            cache.expire(key, ttl)
+            [key, size]
           end
         end
 
