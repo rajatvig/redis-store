@@ -24,7 +24,7 @@ module ActiveSupport
       #   RedisStore.new "localhost:6379/0", "localhost:6380/0"
       #     # => instantiate a cluster
       def initialize(*addresses)
-        @data = ::Redis::Factory.create(addresses)
+        @data = ::Redis::Store::Factory.create(addresses)
         super(addresses.extract_options!)
       end
 
@@ -37,6 +37,11 @@ module ActiveSupport
       end
 
       # Delete objects for matched keys.
+      #
+      # Performance note: this operation can be dangerous for large production
+      # databases, as it uses the Redis "KEYS" command, which is O(N) over the
+      # total number of keys in the database. Users of large Redis caches should
+      # avoid this method.
       #
       # Example:
       #   cache.del_matched "rab*"
@@ -60,6 +65,7 @@ module ActiveSupport
       #   cache.read_multi "rabbit", "white-rabbit", :raw => true
       def read_multi(*names)
         values = @data.mget(*names)
+        values.map! { |v| v.is_a?(ActiveSupport::Cache::Entry) ? v.value : v }
 
         # Remove the options hash before mapping keys to values
         names.extract_options!
@@ -121,6 +127,10 @@ module ActiveSupport
         instrument(:decrement, key, :amount => amount) do
           @data.decrby key, amount
         end
+      end
+
+      def expire(key, ttl)
+        @data.expire key, ttl
       end
 
       # Clear all the data from the store.
